@@ -1,0 +1,11 @@
+/.gradle/*
+/.idea/*
+/.settings/*
+/build/*
+/logs/*
+*.log
+*.bak
+/tests.sql
+/buildSrc/build/*
+/buildSrc/.gradle/*
+/out/*
