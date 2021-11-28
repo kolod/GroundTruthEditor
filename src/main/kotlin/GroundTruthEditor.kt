@@ -3,16 +3,31 @@ package io.github.kolod
 import com.formdev.flatlaf.FlatLightLaf
 import com.jcabi.manifests.Manifests
 import org.slf4j.LoggerFactory
-import java.awt.Dimension
-import java.awt.Image
-import java.awt.Toolkit
+import java.awt.*
+import java.awt.event.ItemEvent.DESELECTED
+import java.awt.event.ItemEvent.SELECTED
+import java.io.File
 import java.util.*
-import javax.swing.JFrame
-import javax.swing.SwingUtilities
+import java.util.prefs.Preferences
+import javax.swing.*
+import javax.swing.JFileChooser.*
+import kotlin.system.exitProcess
+
 
 class GroundTruthEditor : JFrame() {
 	private val logger = LoggerFactory.getLogger(GroundTruthEditor::class.java)
 	private val bundle = ResourceBundle.getBundle("i18n/GroundTruthEditor")
+	private val prefs = Preferences.userNodeForPackage(GroundTruthEditor::class.java)
+	private var directory :String? = null
+
+	private val imageView       = JLabel()
+	private val imageViewScroll = JScrollPane(imageView)
+	private val textView        = JTextArea()
+	private val textViewScroll  = JScrollPane(textView)
+	private val nextButton      = JButton()
+	private val previousButton  = JButton()
+	private val checkButton     = JToggleButton()
+
 
 	private fun loadIcons(name :String, extension :String = "png") :List<Image> {
 		val toolkit = Toolkit.getDefaultToolkit()
@@ -31,8 +46,20 @@ class GroundTruthEditor : JFrame() {
 	}
 
 	private fun translateUI() {
+
 		with(bundle) {
 			title                   = getString("title") + " " + Manifests.read("Build-Date")
+			nextButton.text         = getString("next_button")
+			previousButton.text     = getString("previous_button")
+			checkButton.text        = getString("check_button")
+
+			checkButton.addItemListener { event ->
+				checkButton.text = when (event.stateChange) {
+					SELECTED   -> getString("uncheck_button")
+					DESELECTED -> getString("check_button")
+					else -> ""
+				}
+			}
 		}
 	}
 
@@ -47,8 +74,35 @@ class GroundTruthEditor : JFrame() {
 
 		translateUI()
 
+		val splitter = JSplitPane(JSplitPane.VERTICAL_SPLIT, imageViewScroll, textViewScroll)
+
+		val buttons = JPanel(FlowLayout(FlowLayout.TRAILING))
+		buttons.add(previousButton)
+		buttons.add(checkButton)
+		buttons.add(nextButton)
+
+		with (contentPane) {
+			add(splitter, BorderLayout.CENTER)
+			add(buttons, BorderLayout.SOUTH)
+		}
+
 		pack()
 		setLocationRelativeTo(null)
+		splitter.dividerLocation = splitter.height / 2
+	}
+
+	private fun askDirectory() {
+		val dialog = JFileChooser()
+		dialog.dialogType = OPEN_DIALOG // ???
+		dialog.fileSelectionMode = DIRECTORIES_ONLY
+		dialog.isMultiSelectionEnabled = false
+		dialog.selectedFile = File(prefs.get("directory", System.getProperty("user.dir")))
+		if (dialog.showSaveDialog(this) == APPROVE_OPTION) {
+			directory = dialog.selectedFile.absolutePath
+			prefs.put("directory", directory)
+		}
+
+		if (directory == null) exitProcess(1)
 	}
 
 	/**
@@ -57,6 +111,7 @@ class GroundTruthEditor : JFrame() {
 	init {
 		logger.info("Application started")
 		initComponents()
+		askDirectory()
 	}
 
 	companion object {
