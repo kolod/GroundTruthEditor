@@ -129,6 +129,7 @@ class GroundTruthEditor : JFrame() {
 		logger.info("Open id: $id")
 		true
 	} catch (ex :Exception) {
+		logger.error(ex.message, ex)
 		false
 	}
 
