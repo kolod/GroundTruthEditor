@@ -122,8 +122,8 @@ class GroundTruthEditor : JFrame() {
 	private fun open(newId :Int) :Boolean = try {
 		id = newId
 		val idStr = id.toString().padStart(4, '0')
-		val pngName = "$directory\\$idStr.png".replace("\\".toRegex(), "/")
-		val txtName = "$directory\\$idStr.gt.txt".replace("\\".toRegex(), "/")
+		val pngName = "$directory\\$idStr.png".replace("\\\\".toRegex(), "/")
+		val txtName = "$directory\\$idStr.gt.txt".replace("\\\\".toRegex(), "/")
 		imageView.icon = ImageIcon(pngName)
 		textView.text = File(txtName).readText()
 		logger.info("Open id: $id")
