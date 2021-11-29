@@ -109,13 +109,13 @@ class GroundTruthEditor : JFrame() {
 
 	private fun next() {
 		logger.info("Next")
-		for (i in id..9999) { if (open(i)) return }
+		for (i in id + 1 .. 9999) { if (open(i)) return }
 		logger.info("Last index")
 	}
 
 	private fun previous() {
 		logger.info("Previous")
-		for (i in id downTo 1) { if (open(i)) return }
+		for (i in id - 1 downTo 1) { if (open(i)) return }
 		logger.info("First index")
 	}
 
@@ -129,7 +129,7 @@ class GroundTruthEditor : JFrame() {
 		logger.info("Open id: $id")
 		true
 	} catch (ex :Exception) {
-		logger.error(ex.message, ex)
+		//logger.error(ex.message, ex)
 		false
 	}
 
