@@ -4,27 +4,27 @@ import com.formdev.flatlaf.FlatLightLaf
 import com.jcabi.manifests.Manifests
 import org.slf4j.LoggerFactory
 import java.awt.*
-import java.awt.event.ItemEvent.DESELECTED
-import java.awt.event.ItemEvent.SELECTED
+import java.awt.event.ItemEvent.*
 import java.io.File
 import java.util.*
 import java.util.prefs.Preferences
+import javax.imageio.ImageIO
 import javax.swing.*
 import javax.swing.JFileChooser.*
-import kotlin.system.exitProcess
 
 
 class GroundTruthEditor : JFrame() {
 	private val logger = LoggerFactory.getLogger(GroundTruthEditor::class.java)
 	private val bundle = ResourceBundle.getBundle("i18n/GroundTruthEditor")
 	private val prefs = Preferences.userNodeForPackage(GroundTruthEditor::class.java)
-	private var directory :String? = null
+	private var directory :File? = null
 	private var id = 1
 
 	private val imageView       = JLabel()
 	private val imageViewScroll = JScrollPane(imageView)
 	private val textView        = JTextArea()
 	private val textViewScroll  = JScrollPane(textView)
+	private val browseButton    = JButton()
 	private val nextButton      = JButton()
 	private val previousButton  = JButton()
 	private val checkButton     = JToggleButton()
@@ -53,6 +53,7 @@ class GroundTruthEditor : JFrame() {
 			nextButton.text         = getString("next_button")
 			previousButton.text     = getString("previous_button")
 			checkButton.text        = getString("check_button")
+			browseButton.text       = getString("browse_button")
 
 			checkButton.addItemListener { event ->
 				checkButton.text = when (event.stateChange) {
@@ -73,11 +74,13 @@ class GroundTruthEditor : JFrame() {
 		defaultCloseOperation = EXIT_ON_CLOSE
 		iconImages = loadIcons("icon/")
 
+
 		translateUI()
 
 		val splitter = JSplitPane(JSplitPane.VERTICAL_SPLIT, imageViewScroll, textViewScroll)
 
 		val buttons = JPanel(FlowLayout(FlowLayout.TRAILING))
+		buttons.add(browseButton)
 		buttons.add(previousButton)
 		buttons.add(checkButton)
 		buttons.add(nextButton)
@@ -92,41 +95,13 @@ class GroundTruthEditor : JFrame() {
 		splitter.dividerLocation = splitter.height / 2
 	}
 
-	private fun askDirectory() {
-		val dialog = JFileChooser()
-		dialog.fileSelectionMode = DIRECTORIES_ONLY
-		dialog.isMultiSelectionEnabled = false
-		dialog.selectedFile = File(prefs.get("directory", System.getProperty("user.dir")))
-		if (dialog.showOpenDialog(this) == APPROVE_OPTION) directory = dialog.selectedFile.absolutePath
-		if (directory == null) exitProcess(1)
-		prefs.put("directory", directory)
-		logger.info("Directory: $directory")
-	}
-
-	private fun check(state :Boolean) {
-		//
-	}
-
-	private fun next() {
-		logger.info("Next")
-		for (i in id + 1 .. 9999) { if (open(i)) return }
-		logger.info("Last index")
-	}
-
-	private fun previous() {
-		logger.info("Previous")
-		for (i in id - 1 downTo 1) { if (open(i)) return }
-		logger.info("First index")
-	}
-
 	private fun open(newId :Int) :Boolean = try {
-		id = newId
 		val idStr = id.toString().padStart(4, '0')
-		val pngName = "$directory\\$idStr.png".replace("\\\\".toRegex(), "/")
-		val txtName = "$directory\\$idStr.gt.txt".replace("\\\\".toRegex(), "/")
-		imageView.icon = ImageIcon(pngName)
-		textView.text = File(txtName).readText()
-		logger.info("Open id: $id")
+		val pngFile = File(directory, "$idStr.png")
+		val txtFile = File(directory, "$idStr.gt.txt")
+		imageView.icon = ImageIcon(ImageIO.read(pngFile))
+		textView.text = txtFile.readText()
+		id = newId
 		true
 	} catch (ex :Exception) {
 		//logger.error(ex.message, ex)
@@ -139,11 +114,37 @@ class GroundTruthEditor : JFrame() {
 	init {
 		logger.info("Application started")
 		initComponents()
-		askDirectory()
-		next()
 
-		nextButton.addActionListener { next() }
-		previousButton.addActionListener { previous() }
+		prefs.get("directory", null)?.let {
+			directory = File(it)
+		}
+
+		browseButton.addActionListener {
+			val dialog = JFileChooser()
+			dialog.fileSelectionMode = DIRECTORIES_ONLY
+			dialog.isMultiSelectionEnabled = false
+			dialog.selectedFile = directory
+			if (dialog.showOpenDialog(this) == APPROVE_OPTION) directory = dialog.selectedFile
+			directory?.absolutePath?.let { path ->
+				prefs.put("directory", path)
+				logger.info("Directory: $path")
+				for (i in id + 1 .. 9999) {
+					if (open(i)) break
+				}
+			}
+		}
+
+		nextButton.addActionListener {
+			for (i in id + 1 .. 9999) {
+				if (open(i)) break
+			}
+		}
+
+		previousButton.addActionListener {
+			for (i in id - 1 downTo 1) {
+				if (open(i)) break
+			}
+		}
 	}
 
 	companion object {
@@ -153,6 +154,7 @@ class GroundTruthEditor : JFrame() {
 		@JvmStatic
 		fun main(args: Array<String>) {
 			FlatLightLaf.setup()
+			UIManager.put("defaultFont", UIManager.getFont("defaultFont").deriveFont(18f))
 			SwingUtilities.invokeLater { GroundTruthEditor().isVisible = true }
 		}
 	}
