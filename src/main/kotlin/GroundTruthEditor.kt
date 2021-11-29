@@ -113,10 +113,12 @@ class GroundTruthEditor : JFrame() {
 		logger.info("Last index")
 	}
 
-	private fun open(id :Int) :Boolean = try {
+	private fun open(newId :Int) :Boolean = try {
+		id = newId
 		val idStr = id.toString().padStart(4, '0')
 		imageView.icon = ImageIcon("$directory/$idStr.png")
 		textView.text = File("$directory/$idStr.gt.txt").readText()
+		logger.info("Open id: $id")
 		true
 	} catch (ex :Exception) {
 		//logger.debug(ex.message, ex)
@@ -130,6 +132,7 @@ class GroundTruthEditor : JFrame() {
 		logger.info("Application started")
 		initComponents()
 		askDirectory()
+		open(1)
 
 		nextButton.addActionListener { next() }
 		previousButton.addActionListener { previous() }
