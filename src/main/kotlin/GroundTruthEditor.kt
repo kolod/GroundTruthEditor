@@ -19,6 +19,7 @@ class GroundTruthEditor : JFrame() {
 	private val bundle = ResourceBundle.getBundle("i18n/GroundTruthEditor")
 	private val prefs = Preferences.userNodeForPackage(GroundTruthEditor::class.java)
 	private var directory :String? = null
+	private var id = 1
 
 	private val imageView       = JLabel()
 	private val imageViewScroll = JScrollPane(imageView)
@@ -93,16 +94,33 @@ class GroundTruthEditor : JFrame() {
 
 	private fun askDirectory() {
 		val dialog = JFileChooser()
-		dialog.dialogType = OPEN_DIALOG // ???
 		dialog.fileSelectionMode = DIRECTORIES_ONLY
 		dialog.isMultiSelectionEnabled = false
 		dialog.selectedFile = File(prefs.get("directory", System.getProperty("user.dir")))
-		if (dialog.showSaveDialog(this) == APPROVE_OPTION) {
-			directory = dialog.selectedFile.absolutePath
-			prefs.put("directory", directory)
-		}
-
+		if (dialog.showOpenDialog(this) == APPROVE_OPTION) directory = dialog.selectedFile.absolutePath
 		if (directory == null) exitProcess(1)
+		prefs.put("directory", directory)
+		logger.info("Directory: $directory")
+	}
+
+	private fun next() {
+		for (i in id..9999) { if (open(i)) return }
+		logger.info("Last index")
+	}
+
+	private fun previous() {
+		for (i in id downTo 1) { if (open(i)) return }
+		logger.info("Last index")
+	}
+
+	private fun open(id :Int) :Boolean = try {
+		val idStr = id.toString().padStart(4, '0')
+		imageView.icon = ImageIcon("$directory/$idStr.png")
+		textView.text = File("$directory/$idStr.gt.txt").readText()
+		true
+	} catch (ex :Exception) {
+		//logger.debug(ex.message, ex)
+		false
 	}
 
 	/**
@@ -112,6 +130,9 @@ class GroundTruthEditor : JFrame() {
 		logger.info("Application started")
 		initComponents()
 		askDirectory()
+
+		nextButton.addActionListener { next() }
+		previousButton.addActionListener { previous() }
 	}
 
 	companion object {
