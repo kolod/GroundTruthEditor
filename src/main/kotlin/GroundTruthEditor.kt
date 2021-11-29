@@ -103,25 +103,34 @@ class GroundTruthEditor : JFrame() {
 		logger.info("Directory: $directory")
 	}
 
+	private fun check(state :Boolean) {
+		//
+	}
+
 	private fun next() {
+		logger.info("Next")
 		for (i in id..9999) { if (open(i)) return }
 		logger.info("Last index")
 	}
 
 	private fun previous() {
+		logger.info("Previous")
 		for (i in id downTo 1) { if (open(i)) return }
-		logger.info("Last index")
+		logger.info("First index")
 	}
 
 	private fun open(newId :Int) :Boolean = try {
 		id = newId
 		val idStr = id.toString().padStart(4, '0')
-		imageView.icon = ImageIcon("$directory/$idStr.png")
-		textView.text = File("$directory/$idStr.gt.txt").readText()
+		val pngName = "$directory\\$idStr.png"
+		val txtName = "$directory\\$idStr.gt.txt"
+		logger.info(pngName)
+		logger.info(txtName)
+		imageView.icon = ImageIcon(pngName)
+		textView.text = File(txtName).readText()
 		logger.info("Open id: $id")
 		true
 	} catch (ex :Exception) {
-		//logger.debug(ex.message, ex)
 		false
 	}
 
@@ -132,7 +141,7 @@ class GroundTruthEditor : JFrame() {
 		logger.info("Application started")
 		initComponents()
 		askDirectory()
-		open(1)
+		next()
 
 		nextButton.addActionListener { next() }
 		previousButton.addActionListener { previous() }
