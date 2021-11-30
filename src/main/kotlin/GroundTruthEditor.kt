@@ -20,14 +20,15 @@ class GroundTruthEditor : JFrame() {
 	private var directory :File? = null
 	private var id = 1
 
-	private val imageView       = JLabel()
-	private val imageViewScroll = JScrollPane(imageView)
-	private val textView        = JTextArea()
-	private val textViewScroll  = JScrollPane(textView)
-	private val browseButton    = JButton()
-	private val nextButton      = JButton()
-	private val previousButton  = JButton()
-	private val checkButton     = JToggleButton()
+	private val imageView         = JLabel()
+	private val imageViewScroll   = JScrollPane(imageView)
+	private val textView          = JTextArea()
+	private val textViewScroll    = JScrollPane(textView)
+	private val uncheckAllButton  = JButton()
+	private val browseButton      = JButton()
+	private val nextButton        = JButton()
+	private val previousButton    = JButton()
+	private val checkButton       = JToggleButton()
 
 
 	private fun loadIcons(name :String, extension :String = "png") :List<Image> {
@@ -47,13 +48,13 @@ class GroundTruthEditor : JFrame() {
 	}
 
 	private fun translateUI() {
-
 		with(bundle) {
 			title                   = getString("title") + " " + Manifests.read("Build-Date")
 			nextButton.text         = getString("next_button")
 			previousButton.text     = getString("previous_button")
 			checkButton.text        = getString("check_button")
 			browseButton.text       = getString("browse_button")
+			uncheckAllButton.text   = getString("uncheck_all_button")
 
 			checkButton.addItemListener { event ->
 				checkButton.text = when (event.stateChange) {
@@ -80,6 +81,7 @@ class GroundTruthEditor : JFrame() {
 		val splitter = JSplitPane(JSplitPane.VERTICAL_SPLIT, imageViewScroll, textViewScroll)
 
 		val buttons = JPanel(FlowLayout(FlowLayout.TRAILING))
+		buttons.add(uncheckAllButton)
 		buttons.add(browseButton)
 		buttons.add(previousButton)
 		buttons.add(checkButton)
@@ -117,6 +119,16 @@ class GroundTruthEditor : JFrame() {
 
 		prefs.get("directory", null)?.let {
 			directory = File(it)
+		}
+
+		uncheckAllButton.addActionListener {
+			File(directory).list { _, filename ->
+				filename.endsWith(".gt.txt")
+			}?.mapNotNull { name ->
+				File(name) to File(name.split(".").first() + ".txt")
+			}?.map() {
+
+			}
 		}
 
 		browseButton.addActionListener {
