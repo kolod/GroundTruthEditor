@@ -114,6 +114,7 @@ class GroundTruthEditor : JFrame() {
 	}
 
 	private fun save(checked :Boolean) = try {
+		val idStr = stringID()
 		val txtCheckedFile = File(directory, "$idStr.gt.txt")
 		val txtUncheckedFile = File(directory, "$idStr.txt")
 		if (checked) {
