@@ -97,17 +97,36 @@ class GroundTruthEditor : JFrame() {
 		splitter.dividerLocation = splitter.height / 2
 	}
 
+	private fun stringID() :String {
+		id.toString().padStart(4, '0')
+	}
+
 	private fun open(newId :Int) :Boolean = try {
-		val idStr = id.toString().padStart(4, '0')
-		val pngFile = File(directory, "$idStr.png")
-		val txtFile = File(directory, "$idStr.gt.txt")
-		imageView.icon = ImageIcon(ImageIO.read(pngFile))
-		textView.text = txtFile.readText()
 		id = newId
+		val idStr = stringID()
+		val pngFile = File(directory, "$idStr.png")
+		val txtCheckedFile = File(directory, "$idStr.gt.txt")
+		val txtUncheckedFile = File(directory, "$idStr.txt")
+		imageView.icon = ImageIcon(ImageIO.read(pngFile))
+		textView.text = txtCheckedFile.readText() ?: txtUncheckedFile.readText()
 		true
 	} catch (ex :Exception) {
 		//logger.error(ex.message, ex)
 		false
+	}
+
+	private fun save(checked :Boolean) = try {
+		val txtCheckedFile = File(directory, "$idStr.gt.txt")
+		val txtUncheckedFile = File(directory, "$idStr.txt")
+		if (checked) {
+			txtCheckedFile.writeText(textView.text)
+			txtUncheckedFile.remove()
+		} else {
+			txtCheckedFile.remove()
+			txtUncheckedFile.writeText(textView.text)
+		}
+	} catch (ex :Exception) {
+		logger.error(ex.message, ex)
 	}
 
 	/**
@@ -126,6 +145,12 @@ class GroundTruthEditor : JFrame() {
 				filename.endsWith(".gt.txt")
 			}?.mapNotNull { name ->
 				File(directory, name).renameTo( File(directory, name.split(".").first() + ".txt"))
+			}
+		}
+
+		checkButton.addActionListener { event ->
+			(event.source as? JToggleButton).?model?.selected?.let{ checked ->
+				save(checked)
 			}
 		}
 
