@@ -97,9 +97,7 @@ class GroundTruthEditor : JFrame() {
 		splitter.dividerLocation = splitter.height / 2
 	}
 
-	private fun stringID() :String {
-		id.toString().padStart(4, '0')
-	}
+	private fun stringID() :String = id.toString().padStart(4, '0')
 
 	private fun open(newId :Int) :Boolean = try {
 		id = newId
@@ -149,7 +147,7 @@ class GroundTruthEditor : JFrame() {
 		}
 
 		checkButton.addActionListener { event ->
-			(event.source as? JToggleButton)?.model?.selected?.let{ checked ->
+			(event.source as? JToggleButton)?.model?.isPressed()?.let{ checked ->
 				save(checked)
 			}
 		}
