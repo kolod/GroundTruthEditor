@@ -122,7 +122,7 @@ class GroundTruthEditor : JFrame() {
 		}
 
 		uncheckAllButton.addActionListener {
-			directory.list { _, filename ->
+			directory?.list { _, filename ->
 				filename.endsWith(".gt.txt")
 			}?.mapNotNull { name ->
 				File(directory, name).renameTo( File(directory, name.split(".").first() + ".txt"))
