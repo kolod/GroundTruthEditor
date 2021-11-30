@@ -149,7 +149,7 @@ class GroundTruthEditor : JFrame() {
 		}
 
 		checkButton.addActionListener { event ->
-			(event.source as? JToggleButton).?model?.selected?.let{ checked ->
+			(event.source as? JToggleButton)?.model?.selected?.let{ checked ->
 				save(checked)
 			}
 		}
