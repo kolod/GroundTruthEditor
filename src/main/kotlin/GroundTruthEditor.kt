@@ -11,6 +11,7 @@ import java.util.prefs.Preferences
 import javax.imageio.ImageIO
 import javax.swing.*
 import javax.swing.JFileChooser.*
+import net.openhft.hashing.LongHashFunction
 
 
 class GroundTruthEditor : JFrame() {
@@ -20,15 +21,16 @@ class GroundTruthEditor : JFrame() {
 	private var directory :File? = null
 	private var id = 1
 
-	private val imageView         = JLabel()
-	private val imageViewScroll   = JScrollPane(imageView)
-	private val textView          = JTextArea()
-	private val textViewScroll    = JScrollPane(textView)
-	private val uncheckAllButton  = JButton()
-	private val browseButton      = JButton()
-	private val nextButton        = JButton()
-	private val previousButton    = JButton()
-	private val checkButton       = JToggleButton()
+	private val imageView              = JLabel()
+	private val imageViewScroll        = JScrollPane(imageView)
+	private val textView               = JTextArea()
+	private val textViewScroll         = JScrollPane(textView)
+	private val removeDuplicatesButton = JButton()
+	private val uncheckAllButton       = JButton()
+	private val browseButton           = JButton()
+	private val nextButton             = JButton()
+	private val previousButton         = JButton()
+	private val checkButton            = JToggleButton()
 
 
 	private fun loadIcons(name :String, extension :String = "png") :List<Image> {
@@ -49,12 +51,13 @@ class GroundTruthEditor : JFrame() {
 
 	private fun translateUI() {
 		with(bundle) {
-			title                   = getString("title") + " " + Manifests.read("Build-Date")
-			nextButton.text         = getString("next_button")
-			previousButton.text     = getString("previous_button")
-			checkButton.text        = getString("check_button")
-			browseButton.text       = getString("browse_button")
-			uncheckAllButton.text   = getString("uncheck_all_button")
+			title                       = getString("title") + " " + Manifests.read("Build-Date")
+			nextButton.text             = getString("next_button")
+			previousButton.text         = getString("previous_button")
+			checkButton.text            = getString("check_button")
+			browseButton.text           = getString("browse_button")
+			uncheckAllButton.text       = getString("uncheck_all_button")
+			removeDuplicatesButton.text = getString("remove_duplicates_button")
 
 			checkButton.addItemListener { event ->
 				checkButton.text = when (event.stateChange) {
@@ -75,12 +78,12 @@ class GroundTruthEditor : JFrame() {
 		defaultCloseOperation = EXIT_ON_CLOSE
 		iconImages = loadIcons("icon/")
 
-
 		translateUI()
 
 		val splitter = JSplitPane(JSplitPane.VERTICAL_SPLIT, imageViewScroll, textViewScroll)
 
 		val buttons = JPanel(FlowLayout(FlowLayout.TRAILING))
+		buttons.add(removeDuplicatesButton)
 		buttons.add(uncheckAllButton)
 		buttons.add(browseButton)
 		buttons.add(previousButton)
@@ -140,6 +143,24 @@ class GroundTruthEditor : JFrame() {
 		logger.error(ex.message, ex)
 	}
 
+	private fun removeDuplicates() {
+		val list = directory?.list{ _, filename ->
+			filename.endsWith(".png")
+		}.map{ filename ->
+			File(directory, filename)
+		}.mapNotNull{ file ->
+			try { file to file.readBytes() } catch (ex :Exception) { null }
+		}.map{ (file, bytes) ->
+			file to LongHashFunction.xx3().hashBytes(bytes)
+		}.groupBy{ (_, hash) ->
+			hash
+		}.eachCount().filter{
+			it.value > 1
+		}
+
+		println(list)
+	}
+
 	/**
 	 * Creates new form TestTrainer
 	 */
@@ -149,6 +170,10 @@ class GroundTruthEditor : JFrame() {
 
 		prefs.get("directory", null)?.let {
 			directory = File(it)
+		}
+
+		removeDuplicatesButton.addActionListener {
+			removeDuplicates()
 		}
 
 		uncheckAllButton.addActionListener {

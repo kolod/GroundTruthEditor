@@ -63,6 +63,11 @@ object Tesseract {
 	const val core = "net.sourceforge.tess4j:tess4j:$version"
 }
 
+object OpenHFT {
+	const val version = "0.15"
+	const val hashing = "net.openhft:zero-allocation-hashing:$version"
+}
+
 object Junit {
 	const val version = "5.8.1"
 	const val core = "org.junit.jupiter:junit-jupiter:$version"
