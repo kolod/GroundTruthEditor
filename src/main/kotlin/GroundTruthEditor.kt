@@ -146,16 +146,14 @@ class GroundTruthEditor : JFrame() {
 	private fun removeDuplicates() {
 		val list = directory?.list{ _, filename ->
 			filename.endsWith(".png")
-		}.map{ filename ->
+		}?.map { filename ->
 			File(directory, filename)
-		}.mapNotNull{ file ->
-			try { file to file.readBytes() } catch (ex :Exception) { null }
-		}.map{ (file, bytes) ->
-			file to LongHashFunction.xx3().hashBytes(bytes)
-		}.groupBy{ (_, hash) ->
+		}.mapNotNull { file ->
+			try { file to LongHashFunction.xx3().hashBytes(file.readBytes()) } catch (ex :Exception) { null }
+		}.groupBy { (_, hash) ->
 			hash
-		}.eachCount().filter{
-			it.value > 1
+		}.filter { (_, values) ->
+			values.size > 1
 		}
 
 		println(list)
