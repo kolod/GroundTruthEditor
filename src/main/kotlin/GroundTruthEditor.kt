@@ -106,7 +106,17 @@ class GroundTruthEditor : JFrame() {
 		val txtCheckedFile = File(directory, "$idStr.gt.txt")
 		val txtUncheckedFile = File(directory, "$idStr.txt")
 		imageView.icon = ImageIcon(ImageIO.read(pngFile))
-		textView.text = txtCheckedFile.readText() ?: txtUncheckedFile.readText()
+		textView.text = when {
+			txtCheckedFile.exists() -> {
+				checkButton.isSelected = true
+				txtCheckedFile.readText()
+			}
+			txtUncheckedFile.exists() -> {
+				checkButton.isSelected = false
+				txtUncheckedFile.readText()
+			}
+			else -> ""
+		}
 		true
 	} catch (ex :Exception) {
 		//logger.error(ex.message, ex)
@@ -118,11 +128,13 @@ class GroundTruthEditor : JFrame() {
 		val txtCheckedFile = File(directory, "$idStr.gt.txt")
 		val txtUncheckedFile = File(directory, "$idStr.txt")
 		if (checked) {
+			logger.debug("Save: ${txtCheckedFile.absolutePath}")
 			txtCheckedFile.writeText(textView.text)
-			txtUncheckedFile.remove()
+			txtUncheckedFile.delete()
 		} else {
-			txtCheckedFile.remove()
+			logger.debug("Save: ${txtUncheckedFile.absolutePath}")
 			txtUncheckedFile.writeText(textView.text)
+			txtCheckedFile.delete()
 		}
 	} catch (ex :Exception) {
 		logger.error(ex.message, ex)
@@ -148,8 +160,8 @@ class GroundTruthEditor : JFrame() {
 		}
 
 		checkButton.addActionListener { event ->
-			(event.source as? JToggleButton)?.model?.isPressed()?.let{ checked ->
-				save(checked)
+			(event.source as? JToggleButton)?.let{ button ->
+				save(button.model.isSelected)
 			}
 		}
 
@@ -188,7 +200,7 @@ class GroundTruthEditor : JFrame() {
 		@JvmStatic
 		fun main(args: Array<String>) {
 			FlatLightLaf.setup()
-			UIManager.put("defaultFont", UIManager.getFont("defaultFont").deriveFont(18f))
+			UIManager.put("defaultFont", UIManager.getFont("defaultFont").deriveFont(14f))
 			SwingUtilities.invokeLater { GroundTruthEditor().isVisible = true }
 		}
 	}

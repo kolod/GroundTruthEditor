@@ -1,2 +1,2 @@
-rootProject.name = "GroundTruthEditor"
+rootProject.name = "Ground Truth Editor"
 
