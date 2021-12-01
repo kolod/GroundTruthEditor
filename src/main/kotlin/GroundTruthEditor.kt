@@ -148,11 +148,11 @@ class GroundTruthEditor : JFrame() {
 			filename.endsWith(".png")
 		}?.map { filename ->
 			File(directory, filename)
-		}.mapNotNull { file ->
+		}?.mapNotNull { file ->
 			try { file to LongHashFunction.xx3().hashBytes(file.readBytes()) } catch (ex :Exception) { null }
-		}.groupBy { (_, hash) ->
+		}?.groupBy { (_, hash) ->
 			hash
-		}.filter { (_, values) ->
+		}?.filter { (_, values) ->
 			values.size > 1
 		}
 
