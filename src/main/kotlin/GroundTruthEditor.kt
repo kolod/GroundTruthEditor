@@ -11,7 +11,6 @@ import java.util.prefs.Preferences
 import javax.imageio.ImageIO
 import javax.swing.*
 import javax.swing.JFileChooser.*
-import net.openhft.hashing.LongHashFunction
 
 
 class GroundTruthEditor : JFrame() {
@@ -143,22 +142,6 @@ class GroundTruthEditor : JFrame() {
 		logger.error(ex.message, ex)
 	}
 
-	private fun removeDuplicates() {
-		val list = directory?.list{ _, filename ->
-			filename.endsWith(".png")
-		}?.map { filename ->
-			File(directory, filename)
-		}?.mapNotNull { file ->
-			try { file to LongHashFunction.xx3().hashBytes(file.readBytes()) } catch (ex :Exception) { null }
-		}?.groupBy { (_, hash) ->
-			hash
-		}?.filter { (_, values) ->
-			values.size > 1
-		}
-
-		println(list)
-	}
-
 	/**
 	 * Creates new form TestTrainer
 	 */
@@ -171,7 +154,9 @@ class GroundTruthEditor : JFrame() {
 		}
 
 		removeDuplicatesButton.addActionListener {
-			removeDuplicates()
+			directory?.deleteDuplicatesWithCompanions(".*\\.png".toRegex())?.forEach { file ->
+				logger.debug("Removed: ${file.absolutePath}")
+			}
 		}
 
 		uncheckAllButton.addActionListener {
