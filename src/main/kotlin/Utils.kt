@@ -55,8 +55,6 @@ fun File.getCompanions() :List<File> =
 		}.toList()
 	} else listOf()
 
-fun File.
-
 /**
  * Renumerate files in the directory.
  */
