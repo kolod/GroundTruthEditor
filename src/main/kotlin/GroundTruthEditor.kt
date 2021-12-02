@@ -14,23 +14,30 @@ import javax.swing.JFileChooser.*
 
 
 class GroundTruthEditor : JFrame() {
+	enum class FinishedState {UNFINISHED, ANY}
+
 	private val logger = LoggerFactory.getLogger(GroundTruthEditor::class.java)
 	private val bundle = ResourceBundle.getBundle("i18n/GroundTruthEditor")
 	private val prefs = Preferences.userNodeForPackage(GroundTruthEditor::class.java)
 	private var directory :File? = null
 	private var id = 1
 
-	private val imageView              = JLabel()
-	private val imageViewScroll        = JScrollPane(imageView)
-	private val textView               = JTextArea()
-	private val textViewScroll         = JScrollPane(textView)
-	private val renumberButton         = JButton()
-	private val removeDuplicatesButton = JButton()
-	private val uncheckAllButton       = JButton()
-	private val browseButton           = JButton()
-	private val nextButton             = JButton()
-	private val previousButton         = JButton()
-	private val checkButton            = JToggleButton()
+	private val imageView                 = JLabel()
+	private val imageViewScroll           = JScrollPane(imageView)
+	private val textView                  = JTextArea()
+	private val textViewScroll            = JScrollPane(textView)
+
+	private val renumberButton            = JButton()
+	private val removeDuplicatesButton    = JButton()
+	private val uncheckAllButton          = JButton()
+	private val browseButton              = JButton()
+
+	private val previousButton            = JButton()
+	private val previousUnfinishedButton  = JButton()
+	private val doneButton                = JToggleButton()
+	private val doneAndNextButton         = JButton()
+	private val nextButton                = JButton()
+	private val nextUnfinishedButton      = JButton()
 
 
 	private fun loadIcons(name :String, extension :String = "png") :List<Image> {
@@ -59,6 +66,7 @@ class GroundTruthEditor : JFrame() {
 			uncheckAllButton.text       = getString("uncheck_all_button")
 			removeDuplicatesButton.text = getString("remove_duplicates_button")
 			renumberButton.text         = getString("renumber_button")
+			checkAndNextUnchecked       = getString("next_button")
 
 			checkButton.addItemListener { event ->
 				checkButton.text = when (event.stateChange) {
@@ -83,18 +91,26 @@ class GroundTruthEditor : JFrame() {
 
 		val splitter = JSplitPane(JSplitPane.VERTICAL_SPLIT, imageViewScroll, textViewScroll)
 
-		val buttons = JPanel(FlowLayout(FlowLayout.TRAILING))
-		buttons.add(renumberButton)
-		buttons.add(removeDuplicatesButton)
-		buttons.add(uncheckAllButton)
-		buttons.add(browseButton)
-		buttons.add(previousButton)
-		buttons.add(checkButton)
-		buttons.add(nextButton)
+		val header = JPanel(FlowLayout(FlowLayout.CENTER)).apply {
+			add(renumberButton)
+			add(removeDuplicatesButton)
+			add(uncheckAllButton)
+			add(browseButton)
+		}
+
+		val footer = JPanel(FlowLayout(FlowLayout.CENTER)).apply {
+			add(previousButton)
+			add(previousUnfinishedButton)
+			add(doneButton)
+			add(doneAndNextButton)
+			add(nextButton)
+			add(nextUnfinishedButton)
+		}
 
 		with (contentPane) {
+			add(header, BorderLayout.NORTH)
 			add(splitter, BorderLayout.CENTER)
-			add(buttons, BorderLayout.SOUTH)
+			add(footer, BorderLayout.SOUTH)
 		}
 
 		pack()
@@ -104,25 +120,36 @@ class GroundTruthEditor : JFrame() {
 
 	private fun stringID() :String = id.toString().padStart(4, '0')
 
-	private fun open(newId :Int) :Boolean = try {
+	private fun open(newId :Int, finished :FinishedState) :Boolean = try {
 		id = newId
 		val idStr = stringID()
 		val pngFile = File(directory, "$idStr.png")
 		val txtCheckedFile = File(directory, "$idStr.gt.txt")
 		val txtUncheckedFile = File(directory, "$idStr.txt")
-		imageView.icon = ImageIcon(ImageIO.read(pngFile))
-		textView.text = when {
-			txtCheckedFile.exists() -> {
-				checkButton.isSelected = true
-				txtCheckedFile.readText()
+
+		when (state) {
+			FinishedState.UNFINISHED ->
+				if (txtUncheckedFile.exists()) {
+					checkButton.isSelected = false
+					textView.text = txtUncheckedFile.readText()
+					imageView.icon = ImageIcon(ImageIO.read(pngFile))
+					true
+				} else false
+
+			FinishedState.ANY ->
+				if (txtCheckedFile.exists() -> {
+					doneButton.isSelected = true
+					textView.text = txtCheckedFile.readText()
+					true
+				} else if (txtUncheckedFile.exists()) {
+					checkButton.isSelected = false
+					textView.text = txtUncheckedFile.readText()
+					imageView.icon = ImageIcon(ImageIO.read(pngFile))
+					true
+				} else false
 			}
-			txtUncheckedFile.exists() -> {
-				checkButton.isSelected = false
-				txtUncheckedFile.readText()
-			}
-			else -> ""
 		}
-		true
+
 	} catch (ex :Exception) {
 		//logger.error(ex.message, ex)
 		false
@@ -143,6 +170,18 @@ class GroundTruthEditor : JFrame() {
 		}
 	} catch (ex :Exception) {
 		logger.error(ex.message, ex)
+	}
+
+	fun next(finished :FinishedState) :Boolean {
+		for (i in id + 1 .. 9999) {
+			if (open(i), finished) break
+		}
+	}
+
+	fun previous(finished :FinishedState) :Boolean {
+		for (i in id - 1 downTo 1) {
+			if (open(i), finished) break
+		}
 	}
 
 	/**
@@ -174,12 +213,6 @@ class GroundTruthEditor : JFrame() {
 			}
 		}
 
-		checkButton.addActionListener { event ->
-			(event.source as? JToggleButton)?.let{ button ->
-				save(button.model.isSelected)
-			}
-		}
-
 		browseButton.addActionListener {
 			val dialog = JFileChooser()
 			dialog.fileSelectionMode = DIRECTORIES_ONLY
@@ -195,11 +228,22 @@ class GroundTruthEditor : JFrame() {
 			}
 		}
 
-		nextButton.addActionListener {
-			for (i in id + 1 .. 9999) {
-				if (open(i)) break
+		doneButton.addActionListener { event ->
+			(event.source as? JToggleButton)?.let{ button ->
+				save(button.model.isSelected)
 			}
 		}
+
+		doneAndNextButton.addActionListener { event ->
+			save(true)
+			next(FinishedState.FINISHED)
+		}
+
+		nextButton.addActionListener { next(FinishedState.ANY) }
+		nextUnfinishedButton.addActionListener { next(FinishedState.UNFINISHED) }
+
+		previousButton.addActionListener{ previous(FinishedState.ANY) }
+		previousUnfinishedButton.addActionListener{ previous(FinishedState.UNFINISHED) }
 
 		previousButton.addActionListener {
 			for (i in id - 1 downTo 1) {
