@@ -59,19 +59,21 @@ class GroundTruthEditor : JFrame() {
 	private fun translateUI() {
 		with(bundle) {
 			title                       = getString("title") + " " + Manifests.read("Build-Date")
-			nextButton.text             = getString("next_button")
-			previousButton.text         = getString("previous_button")
-			checkButton.text            = getString("check_button")
-			browseButton.text           = getString("browse_button")
-			uncheckAllButton.text       = getString("uncheck_all_button")
-			removeDuplicatesButton.text = getString("remove_duplicates_button")
-			renumberButton.text         = getString("renumber_button")
-			checkAndNextUnchecked       = getString("next_button")
+			renumberButton.text            = getString("renumber_button")
+			removeDuplicatesButton.text    = getString("remove_duplicates_button")
+			uncheckAllButton.text          = getString("uncheck_all_button")
+			browseButton.text              = getString("browse_button")
+			previousButton.text            = getString("previous_button")
+			previousUnfinishedButton.text  = getString("previous_unfinished_button")
+			doneButton.text                = getString("done_button")
+			doneAndNextButton.text         = getString("done_and_next_button")
+			nextButton.text                = getString("next_button")
+			nextUnfinishedButton.text      = getString("next_unfinished_button")
 
-			checkButton.addItemListener { event ->
-				checkButton.text = when (event.stateChange) {
-					SELECTED   -> getString("uncheck_button")
-					DESELECTED -> getString("check_button")
+			doneButton.addItemListener { event ->
+				doneButton.text = when (event.stateChange) {
+					SELECTED   -> getString("undone_button")
+					DESELECTED -> getString("done_button")
 					else -> ""
 				}
 			}
@@ -127,33 +129,31 @@ class GroundTruthEditor : JFrame() {
 		val txtCheckedFile = File(directory, "$idStr.gt.txt")
 		val txtUncheckedFile = File(directory, "$idStr.txt")
 
-		when (state) {
+		when (finished) {
 			FinishedState.UNFINISHED ->
 				if (txtUncheckedFile.exists()) {
-					checkButton.isSelected = false
+					doneButton.isSelected = false
 					textView.text = txtUncheckedFile.readText()
 					imageView.icon = ImageIcon(ImageIO.read(pngFile))
 					true
 				} else false
 
 			FinishedState.ANY ->
-				if (txtCheckedFile.exists() -> {
+				if (txtCheckedFile.exists()) {
 					doneButton.isSelected = true
 					textView.text = txtCheckedFile.readText()
 					true
 				} else if (txtUncheckedFile.exists()) {
-					checkButton.isSelected = false
+					doneButton.isSelected = false
 					textView.text = txtUncheckedFile.readText()
 					imageView.icon = ImageIcon(ImageIO.read(pngFile))
 					true
 				} else false
 			}
+		} catch (ex :Exception) {
+			//logger.error(ex.message, ex)
+			false
 		}
-
-	} catch (ex :Exception) {
-		//logger.error(ex.message, ex)
-		false
-	}
 
 	private fun save(checked :Boolean) = try {
 		val idStr = stringID()
@@ -172,15 +172,15 @@ class GroundTruthEditor : JFrame() {
 		logger.error(ex.message, ex)
 	}
 
-	fun next(finished :FinishedState) :Boolean {
+	fun next(finished :FinishedState) {
 		for (i in id + 1 .. 9999) {
-			if (open(i), finished) break
+			if (open(i, finished)) break
 		}
 	}
 
-	fun previous(finished :FinishedState) :Boolean {
+	fun previous(finished :FinishedState) {
 		for (i in id - 1 downTo 1) {
-			if (open(i), finished) break
+			if (open(i, finished)) break
 		}
 	}
 
@@ -222,9 +222,7 @@ class GroundTruthEditor : JFrame() {
 			directory?.absolutePath?.let { path ->
 				prefs.put("directory", path)
 				logger.info("Directory: $path")
-				for (i in id + 1 .. 9999) {
-					if (open(i)) break
-				}
+				next(FinishedState.ANY)
 			}
 		}
 
@@ -234,21 +232,25 @@ class GroundTruthEditor : JFrame() {
 			}
 		}
 
-		doneAndNextButton.addActionListener { event ->
+		doneAndNextButton.addActionListener {
 			save(true)
-			next(FinishedState.FINISHED)
+			next(FinishedState.UNFINISHED)
 		}
 
-		nextButton.addActionListener { next(FinishedState.ANY) }
-		nextUnfinishedButton.addActionListener { next(FinishedState.UNFINISHED) }
+		nextButton.addActionListener {
+			next(FinishedState.ANY)
+		}
 
-		previousButton.addActionListener{ previous(FinishedState.ANY) }
-		previousUnfinishedButton.addActionListener{ previous(FinishedState.UNFINISHED) }
+		nextUnfinishedButton.addActionListener {
+			next(FinishedState.UNFINISHED)
+		}
 
-		previousButton.addActionListener {
-			for (i in id - 1 downTo 1) {
-				if (open(i)) break
-			}
+		previousButton.addActionListener{
+			previous(FinishedState.ANY)
+		}
+
+		previousUnfinishedButton.addActionListener{
+			previous(FinishedState.UNFINISHED)
 		}
 	}
 
