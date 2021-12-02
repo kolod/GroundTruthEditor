@@ -12,8 +12,8 @@ internal class UtilsTest {
 		actual.containsAll(expected)
 
 
-    @Test
-    fun testDeleteDuplicates() {
+	@Test
+	fun testDeleteDuplicates() {
 		val directory = File("./testRemoveDuplicates").apply { deleteRecursively(); mkdirs() }
 		for (i in 0..1) File(directory, "1-$i.txt").writeText("test1")
 		for (i in 0..2) File(directory, "2-$i.txt").writeText("test2")
@@ -26,7 +26,7 @@ internal class UtilsTest {
 		val actual = directory.list()?.map { File(directory, it) }
 		assertTrue(compare(expected, actual))
 		directory.deleteRecursively()
-    }
+	}
 
 	@Test
 	fun testGetDuplicates() {
@@ -82,6 +82,22 @@ internal class UtilsTest {
 		}
 		val actual = expected.first().getCompanions()
 		assertTrue(compare(expected, actual))
+		directory.deleteRecursively()
+	}
+
+	@Test
+	fun testRenumberWithCompanions() {
+		val directory = File("./testRenumberWithCompanions").apply { deleteRecursively(); mkdirs() }
+		val expected = val r = (1 .. 5).map{ index ->
+			val expectedName = index.toString().padStart(2, '0')
+			val name = (index*2).toString().padStart(2, '0')
+			listOf("txt", "png").map{ extension ->
+				File("$name.$extension").writeText("")
+				File("$expectedName.$extension")
+			}
+		}.flatten()
+		directory.renumberWithCompanions()
+		val actual = directory.list().map{ File(directory, it) }
 		directory.deleteRecursively()
 	}
 }

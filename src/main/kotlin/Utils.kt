@@ -54,3 +54,24 @@ fun File.getCompanions() :List<File> =
 			file.name.split(".").first() == n
 		}.toList()
 	} else listOf()
+
+fun File.
+
+/**
+ * Renumerate files in the directory.
+ */
+fun File.renumberWithCompanions(regex :Regex, width :Int = 4) {
+	if (isDirectory) {
+		walk().filter { file ->
+			file.isFile && (file.length() > 0) && (regex matches file.name)
+		}.map { file ->
+			file.getCompanions()
+		}.toList().onEachIndexed { index, companions ->
+			val name = index.toString().padStart(width, '0')
+			companions.forEach { oldFile ->
+				val extension = oldFile.name.split('.', limit=2).last()
+				oldFile.renameTo(File(oldFile.parentFile, "$name.$extension"))
+			}
+		}
+	}
+}

@@ -24,6 +24,7 @@ class GroundTruthEditor : JFrame() {
 	private val imageViewScroll        = JScrollPane(imageView)
 	private val textView               = JTextArea()
 	private val textViewScroll         = JScrollPane(textView)
+	private val renumberButton         = JButton()
 	private val removeDuplicatesButton = JButton()
 	private val uncheckAllButton       = JButton()
 	private val browseButton           = JButton()
@@ -57,6 +58,7 @@ class GroundTruthEditor : JFrame() {
 			browseButton.text           = getString("browse_button")
 			uncheckAllButton.text       = getString("uncheck_all_button")
 			removeDuplicatesButton.text = getString("remove_duplicates_button")
+			renumberButton.text         = getString("renumber_button")
 
 			checkButton.addItemListener { event ->
 				checkButton.text = when (event.stateChange) {
@@ -82,6 +84,7 @@ class GroundTruthEditor : JFrame() {
 		val splitter = JSplitPane(JSplitPane.VERTICAL_SPLIT, imageViewScroll, textViewScroll)
 
 		val buttons = JPanel(FlowLayout(FlowLayout.TRAILING))
+		buttons.add(renumberButton)
 		buttons.add(removeDuplicatesButton)
 		buttons.add(uncheckAllButton)
 		buttons.add(browseButton)
@@ -157,6 +160,10 @@ class GroundTruthEditor : JFrame() {
 			directory?.deleteDuplicatesWithCompanions(".*\\.png".toRegex())?.forEach { file ->
 				logger.debug("Removed: ${file.absolutePath}")
 			}
+		}
+
+		renumberButton.addActionListener {
+			directory?.renumberWithCompanions(".*\\.png".toRegex())
 		}
 
 		uncheckAllButton.addActionListener {
