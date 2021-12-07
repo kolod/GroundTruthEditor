@@ -38,7 +38,7 @@ class GroundTruthEditor : JFrame() {
 	private val doneAndNextButton         = JButton()
 	private val nextButton                = JButton()
 	private val nextUnfinishedButton      = JButton()
-
+	private val deleteButton              = JButton()
 
 	private fun loadIcons(name :String, extension :String = "png") :List<Image> {
 		val toolkit = Toolkit.getDefaultToolkit()
@@ -69,6 +69,7 @@ class GroundTruthEditor : JFrame() {
 			doneAndNextButton.text         = getString("done_and_next_button")
 			nextButton.text                = getString("next_button")
 			nextUnfinishedButton.text      = getString("next_unfinished_button")
+			deleteButton.text              = getString("delete_button")
 
 			doneButton.addItemListener { event ->
 				doneButton.text = when (event.stateChange) {
@@ -101,6 +102,7 @@ class GroundTruthEditor : JFrame() {
 		}
 
 		val footer = JPanel(FlowLayout(FlowLayout.CENTER)).apply {
+			add(deleteButton)
 			add(previousButton)
 			add(previousUnfinishedButton)
 			add(doneButton)
@@ -211,6 +213,11 @@ class GroundTruthEditor : JFrame() {
 			}?.mapNotNull { name ->
 				File(directory, name).renameTo( File(directory, name.split(".").first() + ".txt"))
 			}
+		}
+
+		deleteButton.addActionListener {
+			File(directory, "${stringID()}.png").getCompanions().forEach{ it.delete() }
+			next()
 		}
 
 		browseButton.addActionListener {
