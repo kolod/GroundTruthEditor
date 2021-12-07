@@ -88,7 +88,7 @@ internal class UtilsTest {
 	@Test
 	fun testRenumberWithCompanions() {
 		val directory = File("./testRenumberWithCompanions").apply { deleteRecursively(); mkdirs() }
-		val expected = val r = (1 .. 5).map{ index ->
+		val expected = (1 .. 5).map{ index ->
 			val expectedName = index.toString().padStart(2, '0')
 			val name = (index*2).toString().padStart(2, '0')
 			listOf("txt", "png").map{ extension ->
@@ -96,8 +96,9 @@ internal class UtilsTest {
 				File("$expectedName.$extension")
 			}
 		}.flatten()
-		directory.renumberWithCompanions()
-		val actual = directory.list().map{ File(directory, it) }
+		directory.renumberWithCompanions((".*\\.png".toRegex())) { _, _ -> true }
+		val actual = directory.list()?.map{ File(directory, it) }
+		assertTrue(compare(expected, actual))
 		directory.deleteRecursively()
 	}
 }

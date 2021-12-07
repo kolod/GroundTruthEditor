@@ -1,8 +1,10 @@
 package io.github.kolod
 
 import net.openhft.hashing.LongHashFunction
+import java.awt.Color
 import java.io.File
-
+import java.io.StringReader
+import javax.swing.JEditorPane
 
 /**
  * Get all duplicated files in this directory with a name that matches the regex pattern.
@@ -56,37 +58,46 @@ fun File.getCompanions() :List<File> =
 	} else listOf()
 
 /**
- * Renumerate files in the directory.
+ * Renumber files in the directory.
  */
-fun File.renumberWithCompanions(regex :Regex, width :Int = 4) {
-	if (isDirectory) {
-		walk().filter { file ->
+fun File.renumberWithCompanions(regex :Regex, width :Int = 4, progress :(Int, Int) -> Boolean) {
+	if (isDirectory) with (Progress(progress)) {
+		val files = walk().filter { file ->
 			file.isFile && (file.length() > 0) && (regex matches file.name)
-		}.map { file ->
-			file.getCompanions()
-		}.toList().onEachIndexed { index, companions ->
-			val name = index.toString().padStart(width, '0')
-			companions.forEach { oldFile ->
-				val extension = oldFile.name.split('.', limit=2).last()
-				oldFile.renameTo(File(oldFile.parentFile, "$name.$extension"))
+		}.toList()
+
+		if (start(files.size)) {
+			files.map { file ->
+				if (!next()) return
+				file.getCompanions()
+			}.onEachIndexed { index, companions ->
+				val name = index.toString().padStart(width, '0')
+				companions.forEach { oldFile ->
+					val extension = oldFile.name.split('.', limit=2).last()
+					oldFile.renameTo(File(oldFile.parentFile, "$name.$extension"))
+				}
 			}
 		}
+		finish()
 	}
 }
 
+fun File.renumberWithCompanions(regex :String, width :Int = 4, progress :(Int, Int) -> Boolean) =
+	this.renumberWithCompanions(regex.toRegex(), width, progress)
+
 
 /**
- * Split line to groups by char ranges
+ * Split string into groups by char ranges
  */
 fun String.splitByLang() :List<Pair<String, Color>> =
-	str.map { char ->
+	map { char ->
 		char to when (char) {
-			in 'a'..'z' -> Color.BLUE
-			in 'A'..'Z' -> Color.BLUE
+			in 'a'..'z' -> Color.BLUE.brighter()
+			in 'A'..'Z' -> Color.BLUE.brighter()
 			in '0'..'9' -> Color.RED
 			else -> Color.BLACK
 		}
-	}.run{
+	}.run {
 		drop(1).fold(mutableListOf(mutableListOf(first().first) to first().second)) { group, t ->
 			group.last().apply{
 				if (second == t.second) first.add(t.first)
@@ -98,9 +109,13 @@ fun String.splitByLang() :List<Pair<String, Color>> =
 		}
 	}
 
-fun JEditorPane.setTextColloredByLang(str :String) {
-	document.remove(0, document.length)
-	str.splitByLang().forEach{ (text, color) ->
-		document.insertString(document.length, text)
-	}
+fun Color.toCSS() = "rgb($red,$green,$blue)"
+
+fun JEditorPane.setTextColoredByLang(str :String) {
+	contentType = "text/html; charset=UTF-8"
+	val html = "<html><body>" + str.splitByLang().fold(String()) { html, (text, color) ->
+		"$html<span style='color:${color.toCSS()}'>$text</span>"
+	} + "</body></html>"
+	document = editorKit.createDefaultDocument()
+	editorKit.read(StringReader(html), document, 0)
 }

@@ -19,8 +19,16 @@ class GroundTruthEditor : JFrame() {
 	private val logger = LoggerFactory.getLogger(GroundTruthEditor::class.java)
 	private val bundle = ResourceBundle.getBundle("i18n/GroundTruthEditor")
 	private val prefs = Preferences.userNodeForPackage(GroundTruthEditor::class.java)
-	private var directory :File? = null
 	private var id = 1
+	private var directory :File? = null
+		set(value) {
+			if (value != null) {
+				field = value
+				prefs.put("directory", value.absolutePath)
+				id = 1
+				next(FinishedState.ANY)
+			}
+		}
 
 	private val imageView                 = JLabel()
 	private val imageViewScroll           = JScrollPane(imageView)
@@ -95,6 +103,7 @@ class GroundTruthEditor : JFrame() {
 		val splitter = JSplitPane(JSplitPane.VERTICAL_SPLIT, imageViewScroll, textViewScroll)
 
 		val header = JPanel(FlowLayout(FlowLayout.CENTER)).apply {
+			add(deleteButton)
 			add(renumberButton)
 			add(removeDuplicatesButton)
 			add(uncheckAllButton)
@@ -102,7 +111,6 @@ class GroundTruthEditor : JFrame() {
 		}
 
 		val footer = JPanel(FlowLayout(FlowLayout.CENTER)).apply {
-			add(deleteButton)
 			add(previousButton)
 			add(previousUnfinishedButton)
 			add(doneButton)
@@ -135,7 +143,7 @@ class GroundTruthEditor : JFrame() {
 			FinishedState.UNFINISHED ->
 				if (txtUncheckedFile.exists()) {
 					doneButton.isSelected = false
-					textView.setTextColloredByLang(txtUncheckedFile.readText())
+					textView.setTextColoredByLang(txtUncheckedFile.readText())
 					imageView.icon = ImageIcon(ImageIO.read(pngFile))
 					true
 				} else false
@@ -143,17 +151,18 @@ class GroundTruthEditor : JFrame() {
 			FinishedState.ANY ->
 				if (txtCheckedFile.exists()) {
 					doneButton.isSelected = true
-					textView.setTextColloredByLang(txtCheckedFile.readText())
+					textView.setTextColoredByLang(txtCheckedFile.readText())
+					imageView.icon = ImageIcon(ImageIO.read(pngFile))
 					true
 				} else if (txtUncheckedFile.exists()) {
 					doneButton.isSelected = false
-					textView.setTextColloredByLang(txtUncheckedFile.readText())
+					textView.setTextColoredByLang(txtUncheckedFile.readText())
 					imageView.icon = ImageIcon(ImageIO.read(pngFile))
 					true
 				} else false
 			}
 		} catch (ex :Exception) {
-			//logger.error(ex.message, ex)
+			logger.error(ex.message, ex)
 			false
 		}
 
@@ -197,7 +206,7 @@ class GroundTruthEditor : JFrame() {
 			directory = File(it)
 		}
 
-		textViewScroll.
+		//textViewScroll.
 
 		removeDuplicatesButton.addActionListener {
 			directory?.deleteDuplicatesWithCompanions(".*\\.png".toRegex())?.forEach { file ->
@@ -206,7 +215,9 @@ class GroundTruthEditor : JFrame() {
 		}
 
 		renumberButton.addActionListener {
-			directory?.renumberWithCompanions(".*\\.png".toRegex())
+			directory?.renumberWithCompanions(".*\\.png") { current, total ->
+				true
+			}
 		}
 
 		uncheckAllButton.addActionListener {
@@ -219,7 +230,7 @@ class GroundTruthEditor : JFrame() {
 
 		deleteButton.addActionListener {
 			File(directory, "${stringID()}.png").getCompanions().forEach{ it.delete() }
-			next()
+			next(FinishedState.ANY)
 		}
 
 		browseButton.addActionListener {
