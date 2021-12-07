@@ -24,7 +24,7 @@ class GroundTruthEditor : JFrame() {
 
 	private val imageView                 = JLabel()
 	private val imageViewScroll           = JScrollPane(imageView)
-	private val textView                  = JTextArea()
+	private val textView                  = JEditorPane()
 	private val textViewScroll            = JScrollPane(textView)
 
 	private val renumberButton            = JButton()
@@ -58,7 +58,7 @@ class GroundTruthEditor : JFrame() {
 
 	private fun translateUI() {
 		with(bundle) {
-			title                       = getString("title") + " " + Manifests.read("Build-Date")
+			title                          = getString("title") + " " + Manifests.read("Build-Date")
 			renumberButton.text            = getString("renumber_button")
 			removeDuplicatesButton.text    = getString("remove_duplicates_button")
 			uncheckAllButton.text          = getString("uncheck_all_button")
@@ -135,7 +135,7 @@ class GroundTruthEditor : JFrame() {
 			FinishedState.UNFINISHED ->
 				if (txtUncheckedFile.exists()) {
 					doneButton.isSelected = false
-					textView.text = txtUncheckedFile.readText()
+					textView.setTextColloredByLang(txtUncheckedFile.readText())
 					imageView.icon = ImageIcon(ImageIO.read(pngFile))
 					true
 				} else false
@@ -143,11 +143,11 @@ class GroundTruthEditor : JFrame() {
 			FinishedState.ANY ->
 				if (txtCheckedFile.exists()) {
 					doneButton.isSelected = true
-					textView.text = txtCheckedFile.readText()
+					textView.setTextColloredByLang(txtCheckedFile.readText())
 					true
 				} else if (txtUncheckedFile.exists()) {
 					doneButton.isSelected = false
-					textView.text = txtUncheckedFile.readText()
+					textView.setTextColloredByLang(txtUncheckedFile.readText())
 					imageView.icon = ImageIcon(ImageIO.read(pngFile))
 					true
 				} else false
@@ -196,6 +196,8 @@ class GroundTruthEditor : JFrame() {
 		prefs.get("directory", null)?.let {
 			directory = File(it)
 		}
+
+		textViewScroll.
 
 		removeDuplicatesButton.addActionListener {
 			directory?.deleteDuplicatesWithCompanions(".*\\.png".toRegex())?.forEach { file ->

@@ -73,3 +73,34 @@ fun File.renumberWithCompanions(regex :Regex, width :Int = 4) {
 		}
 	}
 }
+
+
+/**
+ * Split line to groups by char ranges
+ */
+fun String.splitByLang() :List<Pair<String, Color>> =
+	str.map { char ->
+		char to when (char) {
+			in 'a'..'z' -> Color.BLUE
+			in 'A'..'Z' -> Color.BLUE
+			in '0'..'9' -> Color.RED
+			else -> Color.BLACK
+		}
+	}.run{
+		drop(1).fold(mutableListOf(mutableListOf(first().first) to first().second)) { group, t ->
+			group.last().apply{
+				if (second == t.second) first.add(t.first)
+				else group.add(mutableListOf(t.first) to t.second)
+			}
+			group
+		}.map{
+			it.first.joinToString(separator="") to it.second
+		}
+	}
+
+fun JEditorPane.setTextColloredByLang(str :String) {
+	document.remove(0, document.length)
+	str.splitByLang().forEach{ (text, color) ->
+		document.insertString(document.length, text)
+	}
+}
