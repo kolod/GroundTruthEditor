@@ -2,9 +2,8 @@ package io.github.kolod
 
 import net.openhft.hashing.LongHashFunction
 import java.awt.Color
-import java.io.File
-import java.io.StringReader
-import javax.swing.JEditorPane
+import java.io.*
+import javax.swing.*
 
 /**
  * Get all duplicated files in this directory with a name that matches the regex pattern.
@@ -119,3 +118,14 @@ fun JEditorPane.setTextColoredByLang(str :String) {
 	document = editorKit.createDefaultDocument()
 	editorKit.read(StringReader(html), document, 0)
 }
+
+fun JEditorPane.getPlainTextOrNull() :String? = try {
+	val plainKit = getEditorKitForContentType("text/plain")
+	val writer = StringWriter()
+	plainKit.write(writer, document, 0, document.length)
+	writer.toString()
+} catch (ex :Exception) {
+	null
+}
+
+fun JEditorPane.getPlainText() :String = getPlainTextOrNull() ?: ""

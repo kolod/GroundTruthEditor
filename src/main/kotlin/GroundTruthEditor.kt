@@ -172,11 +172,11 @@ class GroundTruthEditor : JFrame() {
 		val txtUncheckedFile = File(directory, "$idStr.txt")
 		if (checked) {
 			logger.debug("Save: ${txtCheckedFile.absolutePath}")
-			txtCheckedFile.writeText(textView.text)
+			txtCheckedFile.writeText(textView.getPlainText())
 			txtUncheckedFile.delete()
 		} else {
 			logger.debug("Save: ${txtUncheckedFile.absolutePath}")
-			txtUncheckedFile.writeText(textView.text)
+			txtUncheckedFile.writeText(textView.getPlainText())
 			txtCheckedFile.delete()
 		}
 	} catch (ex :Exception) {
