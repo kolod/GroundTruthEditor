@@ -33,6 +33,7 @@ dependencies {
 	implementation(FlatLookAndFeel.intellij)
 	implementation(FlatLookAndFeel.extras)
 	implementation(OpenHFT.hashing)
+	implementation(Hunspell.core)
 	testImplementation(kotlin("test"))
 	testImplementation(platform(Junit.platform))
 	testImplementation(Junit.core)

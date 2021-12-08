@@ -112,7 +112,7 @@ fun Color.toCSS() = "rgb($red,$green,$blue)"
 
 fun JEditorPane.setTextColoredByLang(str :String) {
 	contentType = "text/html; charset=UTF-8"
-	val html = "<html><body>" + str.splitByLang().fold(String()) { html, (text, color) ->
+	val html = "<html><body style='font-size: large'>" + str.splitByLang().fold(String()) { html, (text, color) ->
 		"$html<span style='color:${color.toCSS()}'>$text</span>"
 	} + "</body></html>"
 	document = editorKit.createDefaultDocument()

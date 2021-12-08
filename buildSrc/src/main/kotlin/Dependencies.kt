@@ -74,6 +74,11 @@ object Junit {
 	const val platform = "org.junit:junit-bom:$version"
 }
 
+object Hunspell {
+	const val version = "1.1.1"
+	const val core = "com.gitlab.dumonts:hunspell:$version"
+}
+
 object Kolod {
 	const val group = "io.github.kolod"
 	const val appender = "$group:log4j-textarea-appender:1.0"
