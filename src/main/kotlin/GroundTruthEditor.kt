@@ -206,7 +206,16 @@ class GroundTruthEditor : JFrame() {
 			directory = File(it)
 		}
 
-		//textViewScroll.
+		textView.document.addDocumentListener(object : DocumentListener {
+			override fun insertUpdate(event :DocumentEvent) = update()
+			override fun removeUpdate(event :DocumentEvent) = update()
+			override fun changedUpdate(event :DocumentEvent) = update()
+			fun update() {
+				val text = textView.getPlainText()
+				textView.setTextColoredByLang(text)
+				logger.info("$text")
+			}
+		})
 
 		removeDuplicatesButton.addActionListener {
 			directory?.deleteDuplicatesWithCompanions(".*\\.png".toRegex())?.forEach { file ->
