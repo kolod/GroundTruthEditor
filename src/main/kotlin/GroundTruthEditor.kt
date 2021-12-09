@@ -10,8 +10,8 @@ import java.util.*
 import java.util.prefs.Preferences
 import javax.imageio.ImageIO
 import javax.swing.*
-import javax.swing.event.*
 import javax.swing.JFileChooser.*
+import javax.swing.event.*
 
 
 class GroundTruthEditor : JFrame() {
@@ -20,6 +20,7 @@ class GroundTruthEditor : JFrame() {
 	private val logger = LoggerFactory.getLogger(GroundTruthEditor::class.java)
 	private val bundle = ResourceBundle.getBundle("i18n/GroundTruthEditor")
 	private val prefs = Preferences.userNodeForPackage(GroundTruthEditor::class.java)
+
 	private var id = 1
 	private var directory :File? = null
 		set(value) {
@@ -144,7 +145,7 @@ class GroundTruthEditor : JFrame() {
 			FinishedState.UNFINISHED ->
 				if (txtUncheckedFile.exists()) {
 					doneButton.isSelected = false
-					textView.setTextColoredByLang(txtUncheckedFile.readText())
+					textView.setPlainText(txtUncheckedFile.readText())
 					imageView.icon = ImageIcon(ImageIO.read(pngFile))
 					true
 				} else false
@@ -152,12 +153,12 @@ class GroundTruthEditor : JFrame() {
 			FinishedState.ANY ->
 				if (txtCheckedFile.exists()) {
 					doneButton.isSelected = true
-					textView.setTextColoredByLang(txtCheckedFile.readText())
+					textView.setPlainText(txtCheckedFile.readText())
 					imageView.icon = ImageIcon(ImageIO.read(pngFile))
 					true
 				} else if (txtUncheckedFile.exists()) {
 					doneButton.isSelected = false
-					textView.setTextColoredByLang(txtUncheckedFile.readText())
+					textView.setPlainText(txtUncheckedFile.readText())
 					imageView.icon = ImageIcon(ImageIO.read(pngFile))
 					true
 				} else false
@@ -212,9 +213,10 @@ class GroundTruthEditor : JFrame() {
 			override fun removeUpdate(event :DocumentEvent) = update()
 			override fun changedUpdate(event :DocumentEvent) = update()
 			fun update() {
+				logger.info("update")
 				val text = textView.getPlainText()
 				textView.setTextColoredByLang(text)
-				logger.info("$text")
+				logger.info(text)
 			}
 		})
 

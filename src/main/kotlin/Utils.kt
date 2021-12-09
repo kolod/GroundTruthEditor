@@ -1,9 +1,20 @@
 package io.github.kolod
 
+import dumonts.hunspell.Hunspell
 import net.openhft.hashing.LongHashFunction
+import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.io.*
 import javax.swing.*
+
+private val logger = LoggerFactory.getLogger(GroundTruthEditor::class.java)
+
+private val dictionary = try {
+	Hunspell.forDictionaryInResources("russian-aot", "dictionaries/")
+} catch (ex :Exception) {
+	logger.error(ex.message, ex)
+	null
+}
 
 /**
  * Get all duplicated files in this directory with a name that matches the regex pattern.
@@ -91,8 +102,8 @@ fun File.renumberWithCompanions(regex :String, width :Int = 4, progress :(Int, I
 fun String.splitByLang() :List<Pair<String, Color>> =
 	map { char ->
 		char to when (char) {
-			in 'a'..'z' -> Color.BLUE.brighter()
-			in 'A'..'Z' -> Color.BLUE.brighter()
+			in 'a'..'z' -> Color.GREEN.brighter()
+			in 'A'..'Z' -> Color.GREEN.brighter()
 			in '0'..'9' -> Color.RED
 			else -> Color.BLACK
 		}
@@ -108,12 +119,73 @@ fun String.splitByLang() :List<Pair<String, Color>> =
 		}
 	}
 
-fun Color.toCSS() = "rgb($red,$green,$blue)"
+private fun Color.toCSS() = "rgb($red,$green,$blue)"
+private fun Color.toForeground() = "color:${toCSS()}"
+
+private val spacesPattern = Regex("\\s+")
+private val punctuationMarksPattern = Regex("[a-zA-Zа-яА-ЯЁё][%!?;:,\\\\.]+")
+private val punctuationMarksPatternAll = Regex("[()%!?;:,\\\\.\"]+")
+
+private val romanNumbers = linkedMapOf(
+	1000 to "M", 900 to "CM",
+	500 to "D", 400 to "CD",
+	100 to "C", 90 to "XC",
+	50 to "L", 40 to "XL",
+	10 to "X", 9 to "IX",
+	5 to "V", 4 to "IV",
+	1 to "I"
+)
+
+fun toRoman(number: Int): String {
+	for (i in romanNumbers.keys) if (number >= i) return romanNumbers[i] + toRoman(number - i)
+	return ""
+}
+
+private val myDictionary = (1..50).toList().map{ toRoman(it) } + listOf("№", "ПАО", "Запорожсталь", "НПАОП")
+
+fun String.normalizeQuotes() = replace('”', '"')
+fun String.addExtraSpace() = replace(punctuationMarksPattern) { it.groupValues[0] + ' ' }.replace("\".", "\". ")
+fun String.removeExtraSpaces() = replace(spacesPattern, " ")
+fun String.removeNewLines() = replace("\n"," ")
+fun String.simplify() = trim().removeNewLines().normalizeQuotes().addExtraSpace().removeExtraSpaces()
+fun String.removePunctuationMarks() = replace(punctuationMarksPatternAll, "")
+fun String.toWordPairs() = (1 until length).map { take(it) to drop(it) }
+
+
+fun String.trySplit() = toWordPairs().firstOrNull { (first, second) ->
+	dictionary?.spell(first) == true && dictionary.spell(second)
+}
+
+fun String.spellCheck() :String =
+	if (dictionary != null) split(" ").joinToString(" ") { string ->
+		val word = string.removePunctuationMarks()
+		if (word in myDictionary || dictionary.spell(word)) {
+			string
+		} else {
+			string.trySplit()?.let { (first, second) ->
+				"$first $second"
+			} ?: run {
+				val suggestions = dictionary.suggest(word)
+				if (suggestions.isNotEmpty()) {
+					"<a href='#' data-suggestions='${suggestions.joinToString(";")}'>$string</a>"
+				} else {
+					"<a href='#'>$string</a>"
+				}
+			}
+		}
+	} else this
+
+fun JEditorPane.setTextChecked(str :String)  {
+	contentType = "text/html; charset=UTF-8"
+	val html = "<html><body style='font-size: large'>" + str.spellCheck() + "</body></html>"
+	document = editorKit.createDefaultDocument()
+	editorKit.read(StringReader(html), document, 0)
+}
 
 fun JEditorPane.setTextColoredByLang(str :String) {
 	contentType = "text/html; charset=UTF-8"
 	val html = "<html><body style='font-size: large'>" + str.splitByLang().fold(String()) { html, (text, color) ->
-		"$html<span style='color:${color.toCSS()}'>$text</span>"
+		"$html<span style='${color.toForeground()}'>$text</span>"
 	} + "</body></html>"
 	document = editorKit.createDefaultDocument()
 	editorKit.read(StringReader(html), document, 0)
@@ -129,3 +201,5 @@ fun JEditorPane.getPlainTextOrNull() :String? = try {
 }
 
 fun JEditorPane.getPlainText() :String = getPlainTextOrNull() ?: ""
+
+fun JEditorPane.setPlainText(str :String) = setTextChecked(str.simplify())
