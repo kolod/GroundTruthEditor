@@ -11,7 +11,6 @@ import java.util.prefs.Preferences
 import javax.imageio.ImageIO
 import javax.swing.*
 import javax.swing.JFileChooser.*
-import javax.swing.event.*
 
 
 class GroundTruthEditor : JFrame() {
@@ -207,18 +206,6 @@ class GroundTruthEditor : JFrame() {
 		prefs.get("directory", null)?.let {
 			directory = File(it)
 		}
-
-		textView.document.addDocumentListener(object : DocumentListener {
-			override fun insertUpdate(event :DocumentEvent) = update()
-			override fun removeUpdate(event :DocumentEvent) = update()
-			override fun changedUpdate(event :DocumentEvent) = update()
-			fun update() {
-				logger.info("update")
-				val text = textView.getPlainText()
-				textView.setTextColoredByLang(text)
-				logger.info(text)
-			}
-		})
 
 		removeDuplicatesButton.addActionListener {
 			directory?.deleteDuplicatesWithCompanions(".*\\.png".toRegex())?.forEach { file ->

@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.io.*
 import javax.swing.*
+import javax.swing.event.DocumentEvent
+import javax.swing.event.DocumentListener
 
 private val logger = LoggerFactory.getLogger(GroundTruthEditor::class.java)
 
@@ -150,8 +152,6 @@ fun String.removeNewLines() = replace("\n"," ")
 fun String.simplify() = trim().removeNewLines().normalizeQuotes().addExtraSpace().removeExtraSpaces()
 fun String.removePunctuationMarks() = replace(punctuationMarksPatternAll, "")
 fun String.toWordPairs() = (1 until length).map { take(it) to drop(it) }
-
-
 fun String.trySplit() = toWordPairs().firstOrNull { (first, second) ->
 	dictionary?.spell(first) == true && dictionary.spell(second)
 }
@@ -177,7 +177,7 @@ fun String.spellCheck() :String =
 
 fun JEditorPane.setTextChecked(str :String)  {
 	contentType = "text/html; charset=UTF-8"
-	val html = "<html><body style='font-size: large'>" + str.spellCheck() + "</body></html>"
+	val html = "<html><body style='font-size: large'>" + str.simplify().spellCheck() + "</body></html>"
 	document = editorKit.createDefaultDocument()
 	editorKit.read(StringReader(html), document, 0)
 }
@@ -202,4 +202,11 @@ fun JEditorPane.getPlainTextOrNull() :String? = try {
 
 fun JEditorPane.getPlainText() :String = getPlainTextOrNull() ?: ""
 
-fun JEditorPane.setPlainText(str :String) = setTextChecked(str.simplify())
+fun JEditorPane.setPlainText(str :String) {
+	setTextChecked(str)
+	document.addDocumentListener(object : DocumentListener {
+		override fun insertUpdate(event : DocumentEvent) = setTextChecked(getPlainText())
+		override fun removeUpdate(event : DocumentEvent) = setTextChecked(getPlainText())
+		override fun changedUpdate(event : DocumentEvent) = setTextChecked(getPlainText())
+	})
+}
