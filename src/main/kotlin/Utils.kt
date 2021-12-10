@@ -5,6 +5,7 @@ import net.openhft.hashing.LongHashFunction
 import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.io.*
+import java.nio.file.Paths
 import javax.swing.*
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
@@ -69,13 +70,15 @@ fun File.getCompanions() :List<File> =
 		}.toList()
 	} else listOf()
 
+val File.fileName :String get() = Paths.get(absolutePath).fileName.toString()
+
 /**
  * Renumber files in the directory.
  */
-fun File.renumberWithCompanions(regex :Regex, width :Int = 4, progress :(Int, Int) -> Boolean) {
+fun File.renumberWithCompanions(regex :Regex, width :Int = 4, progress :((Int, Int) -> Boolean)? = null) {
 	if (isDirectory) with (Progress(progress)) {
 		val files = walk().filter { file ->
-			file.isFile && (file.length() > 0) && (regex matches file.name)
+			file.isFile && (file.length() > 0) && (regex matches file.fileName)
 		}.toList()
 
 		if (start(files.size)) {
@@ -83,7 +86,7 @@ fun File.renumberWithCompanions(regex :Regex, width :Int = 4, progress :(Int, In
 				if (!next()) return
 				file.getCompanions()
 			}.onEachIndexed { index, companions ->
-				val name = index.toString().padStart(width, '0')
+				val name = index.inc().toString().padStart(width, '0')
 				companions.forEach { oldFile ->
 					val extension = oldFile.name.split('.', limit=2).last()
 					oldFile.renameTo(File(oldFile.parentFile, "$name.$extension"))
@@ -94,7 +97,7 @@ fun File.renumberWithCompanions(regex :Regex, width :Int = 4, progress :(Int, In
 	}
 }
 
-fun File.renumberWithCompanions(regex :String, width :Int = 4, progress :(Int, Int) -> Boolean) =
+fun File.renumberWithCompanions(regex :String, width :Int = 4, progress :((Int, Int) -> Boolean)? = null) =
 	this.renumberWithCompanions(regex.toRegex(), width, progress)
 
 
@@ -121,8 +124,8 @@ fun String.splitByLang() :List<Pair<String, Color>> =
 		}
 	}
 
-private fun Color.toCSS() = "rgb($red,$green,$blue)"
-private fun Color.toForeground() = "color:${toCSS()}"
+fun Color.toCSS() = "rgb($red,$green,$blue)"
+fun Color.toForeground() = "color:${toCSS()}"
 
 private val spacesPattern = Regex("\\s+")
 private val punctuationMarksPattern = Regex("[a-zA-Zа-яА-ЯЁё][%!?;:,\\\\.]+")
@@ -182,14 +185,10 @@ fun JEditorPane.setTextChecked(str :String)  {
 	editorKit.read(StringReader(html), document, 0)
 }
 
-fun JEditorPane.setTextColoredByLang(str :String) {
-	contentType = "text/html; charset=UTF-8"
-	val html = "<html><body style='font-size: large'>" + str.splitByLang().fold(String()) { html, (text, color) ->
-		"$html<span style='${color.toForeground()}'>$text</span>"
-	} + "</body></html>"
-	document = editorKit.createDefaultDocument()
-	editorKit.read(StringReader(html), document, 0)
+fun String.setTextColoredByLang(str :String) = str.splitByLang().fold(String()) { html, (text, color) ->
+	"$html<span style='${color.toForeground()}'>$text</span>"
 }
+
 
 fun JEditorPane.getPlainTextOrNull() :String? = try {
 	val plainKit = getEditorKitForContentType("text/plain")

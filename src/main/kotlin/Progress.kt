@@ -1,6 +1,6 @@
 package io.github.kolod
 
-class Progress(private val block: (Int, Int) -> Boolean) {
+class Progress(private val block: ((Int, Int) -> Boolean)? = null) {
 	private var time = 0L
 	private var total = 0
 	private var current = 0
@@ -8,24 +8,24 @@ class Progress(private val block: (Int, Int) -> Boolean) {
 	fun start(value :Int) :Boolean {
 		total = value
 		time = System.currentTimeMillis()
-		return block(0, value)
+		return block?.invoke(0, value) ?: true
 	}
 
 	fun next() :Boolean {
 		current += 1
 		if ((System.currentTimeMillis() - time) < 100L) return true
 		time = System.currentTimeMillis()
-		return block(current, total)
+		return block?.invoke(current, total) ?: true
 	}
 
 	fun next(value :Int) :Boolean {
 		if ((System.currentTimeMillis() - time) < 100L) return true
 		time = System.currentTimeMillis()
 		current = value
-		return block(current, total)
+		return block?.invoke(current, total) ?: true
 	}
 
 	fun finish() {
-		block(total, total)
+		block?.invoke(total, total)
 	}
 }

@@ -2,15 +2,12 @@ package io.github.kolod
 
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.*
+import java.awt.Color
 import java.io.File
 
 internal class UtilsTest {
 
-	private fun compare(expected :List<File>, actual: List<File>?) :Boolean =
-		(expected.size == actual?.size) &&
-		expected.containsAll(actual) &&
-		actual.containsAll(expected)
-
+	private fun List<File>.toSortedString() :String = map { it.name }.sorted().joinToString(prefix="[", postfix="]")
 
 	@Test
 	fun testDeleteDuplicates() {
@@ -24,7 +21,7 @@ internal class UtilsTest {
 			File(directory, "2-0.txt")
 		)
 		val actual = directory.list()?.map { File(directory, it) }
-		assertTrue(compare(expected, actual))
+		assertEquals(expected.toSortedString(), actual?.toSortedString())
 		directory.deleteRecursively()
 	}
 
@@ -41,7 +38,7 @@ internal class UtilsTest {
 			File(directory, "2-1.txt")
 		)
 		val actual = directory.getDuplicates(".*\\.txt".toRegex())
-		assertTrue(compare(expected, actual))
+		assertEquals(expected.toSortedString(), actual.toSortedString())
 		directory.deleteRecursively()
 	}
 
@@ -70,7 +67,7 @@ internal class UtilsTest {
 			File(directory, "2-2.gt.txt"),
 		)
 		val actual = directory.deleteDuplicatesWithCompanions(".*\\.png".toRegex())
-		assertTrue(compare(expected, actual))
+		assertEquals(expected.toSortedString(), actual.toSortedString())
 		directory.deleteRecursively()
 	}
 
@@ -81,24 +78,56 @@ internal class UtilsTest {
 			File(directory, "test.$extension").apply{ writeText("") }
 		}
 		val actual = expected.first().getCompanions()
-		assertTrue(compare(expected, actual))
+		assertEquals(expected.toSortedString(), actual.toSortedString())
 		directory.deleteRecursively()
 	}
 
 	@Test
 	fun testRenumberWithCompanions() {
-		val directory = File("./testRenumberWithCompanions").apply { deleteRecursively(); mkdirs() }
+		val directory = File("./testRenumberWithCompanions")
+		directory.deleteRecursively()
+		directory.mkdirs()
 		val expected = (1 .. 5).map{ index ->
 			val expectedName = index.toString().padStart(2, '0')
 			val name = (index*2).toString().padStart(2, '0')
 			listOf("txt", "png").map{ extension ->
-				File("$name.$extension").writeText("")
-				File("$expectedName.$extension")
+				File(directory, "$name.$extension").writeText("-")
+				File(directory, "$expectedName.$extension")
 			}
 		}.flatten()
-		directory.renumberWithCompanions((".*\\.png".toRegex())) { _, _ -> true }
-		val actual = directory.list()?.map{ File(directory, it) }
-		assertTrue(compare(expected, actual))
+		directory.renumberWithCompanions(""".*\.png""", 2)
+		val actual = directory.list()?.map { File(directory, it) }?.toList()
+		assertEquals(expected.toSortedString(), actual?.toSortedString())
 		directory.deleteRecursively()
+	}
+
+	@Test
+	fun testToCSS() {
+		assertEquals("rgb(0,0,0)", Color.BLACK.toCSS())
+		assertEquals("rgb(255,0,0)", Color.RED.toCSS())
+		assertEquals("rgb(0,255,0)", Color.GREEN.toCSS())
+		assertEquals("rgb(0,0,255)", Color.BLUE.toCSS())
+		assertEquals("rgb(255,255,255)", Color.WHITE.toCSS())
+	}
+
+	@Test
+	fun testToForeground() {
+		assertEquals("color:rgb(0,0,0)", Color.BLACK.toForeground())
+		assertEquals("color:rgb(255,0,0)", Color.RED.toForeground())
+		assertEquals("color:rgb(0,255,0)", Color.GREEN.toForeground())
+		assertEquals("color:rgb(0,0,255)", Color.BLUE.toForeground())
+		assertEquals("color:rgb(255,255,255)", Color.WHITE.toForeground())
+	}
+
+	@Test
+	fun testToRoman() {
+		assertEquals(""   , toRoman(-1))
+		assertEquals(""   , toRoman(0))
+		assertEquals("I"  , toRoman(1))
+		assertEquals("II" , toRoman(2))
+		assertEquals("III", toRoman(3))
+		assertEquals("IV" , toRoman(4))
+		assertEquals("V"  , toRoman(5))
+		assertEquals("VI" , toRoman(6))
 	}
 }

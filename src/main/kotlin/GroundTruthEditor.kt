@@ -214,9 +214,7 @@ class GroundTruthEditor : JFrame() {
 		}
 
 		renumberButton.addActionListener {
-			directory?.renumberWithCompanions(".*\\.png") { current, total ->
-				true
-			}
+			directory?.renumberWithCompanions(""".*\.png""")
 		}
 
 		uncheckAllButton.addActionListener {
