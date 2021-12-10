@@ -2,7 +2,6 @@ package io.github.kolod
 
 import com.formdev.flatlaf.FlatLightLaf
 import com.jcabi.manifests.Manifests
-import org.slf4j.LoggerFactory
 import java.awt.*
 import java.awt.event.ItemEvent.*
 import java.io.File
@@ -16,7 +15,6 @@ import javax.swing.JFileChooser.*
 class GroundTruthEditor : JFrame() {
 	enum class FinishedState {UNFINISHED, ANY}
 
-	private val logger = LoggerFactory.getLogger(GroundTruthEditor::class.java)
 	private val bundle = ResourceBundle.getBundle("i18n/GroundTruthEditor")
 	private val prefs = Preferences.userNodeForPackage(GroundTruthEditor::class.java)
 
@@ -35,6 +33,8 @@ class GroundTruthEditor : JFrame() {
 	private val imageViewScroll           = JScrollPane(imageView)
 	private val textView                  = JEditorPane()
 	private val textViewScroll            = JScrollPane(textView)
+	private val rawTextView               = JTextArea()
+	private val rawTextViewScroll         = JScrollPane(rawTextView)
 
 	private val renumberButton            = JButton()
 	private val removeDuplicatesButton    = JButton()
@@ -65,9 +65,13 @@ class GroundTruthEditor : JFrame() {
 		}
 	}
 
+	private fun updateTitle() {
+		title = bundle.getString("title") + " " + Manifests.read("Build-Date") + " [" + stringID() + "]"
+	}
+
 	private fun translateUI() {
+		updateTitle()
 		with(bundle) {
-			title                          = getString("title") + " " + Manifests.read("Build-Date")
 			renumberButton.text            = getString("renumber_button")
 			removeDuplicatesButton.text    = getString("remove_duplicates_button")
 			uncheckAllButton.text          = getString("uncheck_all_button")
@@ -101,7 +105,8 @@ class GroundTruthEditor : JFrame() {
 
 		translateUI()
 
-		val splitter = JSplitPane(JSplitPane.VERTICAL_SPLIT, imageViewScroll, textViewScroll)
+		val splitter1 = JSplitPane(JSplitPane.VERTICAL_SPLIT, rawTextViewScroll, textViewScroll)
+		val splitter2 = JSplitPane(JSplitPane.VERTICAL_SPLIT, imageViewScroll, splitter1)
 
 		val header = JPanel(FlowLayout(FlowLayout.CENTER)).apply {
 			add(deleteButton)
@@ -122,13 +127,14 @@ class GroundTruthEditor : JFrame() {
 
 		with (contentPane) {
 			add(header, BorderLayout.NORTH)
-			add(splitter, BorderLayout.CENTER)
+			add(splitter2, BorderLayout.CENTER)
 			add(footer, BorderLayout.SOUTH)
 		}
 
 		pack()
 		setLocationRelativeTo(null)
-		splitter.dividerLocation = splitter.height / 2
+		splitter2.dividerLocation = splitter2.height / 2
+		splitter1.dividerLocation = splitter1.height / 2
 	}
 
 	private fun stringID() :String = id.toString().padStart(4, '0')
@@ -144,21 +150,33 @@ class GroundTruthEditor : JFrame() {
 			FinishedState.UNFINISHED ->
 				if (txtUncheckedFile.exists()) {
 					doneButton.isSelected = false
-					textView.setPlainText(txtUncheckedFile.readText())
+					txtUncheckedFile.readText().let{
+						textView.setPlainText(it)
+						rawTextView.text = it
+					}
 					imageView.icon = ImageIcon(ImageIO.read(pngFile))
+					updateTitle()
 					true
 				} else false
 
 			FinishedState.ANY ->
 				if (txtCheckedFile.exists()) {
 					doneButton.isSelected = true
-					textView.setPlainText(txtCheckedFile.readText())
+					txtCheckedFile.readText().let{
+						textView.setPlainText(it)
+						rawTextView.text = it
+					}
 					imageView.icon = ImageIcon(ImageIO.read(pngFile))
+					updateTitle()
 					true
 				} else if (txtUncheckedFile.exists()) {
 					doneButton.isSelected = false
-					textView.setPlainText(txtUncheckedFile.readText())
+					txtUncheckedFile.readText().let{
+						textView.setPlainText(it)
+						rawTextView.text = it
+					}
 					imageView.icon = ImageIcon(ImageIO.read(pngFile))
+					updateTitle()
 					true
 				} else false
 			}
@@ -205,6 +223,7 @@ class GroundTruthEditor : JFrame() {
 
 		prefs.get("directory", null)?.let {
 			directory = File(it)
+			next(FinishedState.UNFINISHED)
 		}
 
 		removeDuplicatesButton.addActionListener {

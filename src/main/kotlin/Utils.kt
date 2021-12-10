@@ -2,6 +2,7 @@ package io.github.kolod
 
 import dumonts.hunspell.Hunspell
 import net.openhft.hashing.LongHashFunction
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.io.*
@@ -10,10 +11,10 @@ import javax.swing.*
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 
-private val logger = LoggerFactory.getLogger(GroundTruthEditor::class.java)
+val logger: Logger = LoggerFactory.getLogger(GroundTruthEditor::class.java)
 
 private val dictionary = try {
-	Hunspell.forDictionaryInResources("russian-aot", "dictionaries/")
+	Hunspell.forDictionaryInResources("ru_RU", "dictionaries/")
 } catch (ex :Exception) {
 	logger.error(ex.message, ex)
 	null
@@ -146,22 +147,68 @@ fun toRoman(number: Int): String {
 	return ""
 }
 
-private val myDictionary = (1..50).toList().map{ toRoman(it) } + listOf("№", "ПАО", "Запорожсталь", "НПАОП")
+private val myDictionary = (1..50).toList().map{ toRoman(it) } + listOf(
+	"№", "ПАО", "Запорожсталь", "НПАОП", "СИЗ", "Н-1", "Н-2", "и/или", "№1", "№2", "№3", "№4", "№5", "п", "р",
+	"ОКПП", "МЕТИНВЕСТ", "ИСМ", "OHSAS", "м", "ПБ", "газоопасных", "газозащитной", "АБВР", "ИОТ"
+)
 
-fun String.normalizeQuotes() = replace('”', '"')
 fun String.addExtraSpace() = replace(punctuationMarksPattern) { it.groupValues[0] + ' ' }.replace("\".", "\". ")
 fun String.removeExtraSpaces() = replace(spacesPattern, " ")
-fun String.removeNewLines() = replace("\n"," ")
-fun String.simplify() = trim().removeNewLines().normalizeQuotes().addExtraSpace().removeExtraSpaces()
+fun String.simplify() = trim().addExtraSpace().removeExtraSpaces()
 fun String.removePunctuationMarks() = replace(punctuationMarksPatternAll, "")
 fun String.toWordPairs() = (1 until length).map { take(it) to drop(it) }
 fun String.trySplit() = toWordPairs().firstOrNull { (first, second) ->
-	dictionary?.spell(first) == true && dictionary.spell(second)
+	dictionary?.spell(first.removePunctuationMarks()) == true && dictionary.spell(second.removePunctuationMarks())
 }
+
+fun String.applyKnownFixes() =
+	listOf(
+		"\n" to " ",
+		"“" to "\"",
+		"”" to "\"",
+		"\"примечание" to "\" Примечание",
+		"\"Примечание" to "\" Примечание",
+		"\".примечание" to "\" Примечание",
+		"\".Примечание" to "\" Примечание",
+		"ОНБА5" to "OHSAS",
+		"HFIAOTI" to "НПАОП",
+		"HIIAOTI" to "НПАОП",
+		" pasgena " to  " раздела ",
+		"rona" to "года",
+		"1!\"" to "1! \"",
+		"2!\"" to "2! \"",
+		"3!\"" to "3! \"",
+		"4!\"" to "4! \"",
+		"5!\"" to "5! \"",
+		" Ц. " to " II. ",
+		" Ц, " to " II, ",
+		" Ш." to " III.",
+		" Ш," to " III,",
+		" ТиI" to " I и II",
+		" cr. " to " ст. ",
+		" n. " to " п. ",
+		" Ш " to " III ",
+		" УШ, " to " VIII, ",
+		" ГУ " to " IV ",
+		"р. П" to "р. II",
+		"ст. В" to "ст. 8",
+		" П. " to " II. ",
+		" 1\\ " to " IV ",
+		" УП, " to " VII, ",
+		" r. p. " to " п.р. ",
+		" П " to " II ",
+		" 1\\/ " to " IV ",
+		"roga" to "года",
+		"\\'" to "V",
+		"©" to "с",
+	).fold(this) { result, (oldValue, newValue) ->
+		result.replace(oldValue, newValue)
+	}
 
 fun String.spellCheck() :String =
 	if (dictionary != null) split(" ").joinToString(" ") { string ->
 		val word = string.removePunctuationMarks()
+		//logger.info(word)
 		if (word in myDictionary || dictionary.spell(word)) {
 			string
 		} else {
@@ -180,7 +227,7 @@ fun String.spellCheck() :String =
 
 fun JEditorPane.setTextChecked(str :String)  {
 	contentType = "text/html; charset=UTF-8"
-	val html = "<html><body style='font-size: large'>" + str.simplify().spellCheck() + "</body></html>"
+	val html = "<html><body style='font-size: large'>" + str.simplify().applyKnownFixes().spellCheck() + "</body></html>"
 	document = editorKit.createDefaultDocument()
 	editorKit.read(StringReader(html), document, 0)
 }
