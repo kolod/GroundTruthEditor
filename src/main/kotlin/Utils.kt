@@ -11,7 +11,7 @@ import javax.swing.*
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
 
-val logger: Logger = LoggerFactory.getLogger(GroundTruthEditor::class.java)
+val logger: Logger = LoggerFactory.getLogger(MainWindow::class.java)
 
 private val dictionary = try {
 	Hunspell.forDictionaryInResources("ru_RU", "dictionaries/")
@@ -148,8 +148,11 @@ fun toRoman(number: Int): String {
 }
 
 private val myDictionary = (1..50).toList().map{ toRoman(it) } + listOf(
-	"№", "ПАО", "Запорожсталь", "НПАОП", "СИЗ", "Н-1", "Н-2", "и/или", "№1", "№2", "№3", "№4", "№5", "п", "р",
-	"ОКПП", "МЕТИНВЕСТ", "ИСМ", "OHSAS", "м", "ПБ", "газоопасных", "газозащитной", "АБВР", "ИОТ"
+	"№", "ПАО", "Запорожсталь", "НПАОП", "СИЗ", "Н-1", "Н-2", "Н-5", "и/или", "№1", "№2", "№3", "№4", "№5", "п", "р",
+	"ОКПП", "МЕТИНВЕСТ", "ИСМ", "OHSAS", "м", "ПБ", "газоопасных", "газозащитной", "АБВР", "ИОТ", "ежесменных",
+	"обвязочные", "гемостатическую", "мульдовые", "РПСС", "МСЭК", "Гоструда", "Ежесменно", "чел/час", "ОТПиТБ",
+	"механоприводом", "пневмоприводом", "3-х", "2-х", "клинодержателя", "ежесменно", "Огнетушащая", "ООТ",
+	"взрыво-", "нижеперечисленных"
 )
 
 fun String.addExtraSpace() = replace(punctuationMarksPattern) { it.groupValues[0] + ' ' }.replace("\".", "\". ")
@@ -166,6 +169,7 @@ fun String.applyKnownFixes() =
 		"\n" to " ",
 		"“" to "\"",
 		"”" to "\"",
+		"x" to "x",
 		"\"примечание" to "\" Примечание",
 		"\"Примечание" to "\" Примечание",
 		"\".примечание" to "\" Примечание",
@@ -205,6 +209,15 @@ fun String.applyKnownFixes() =
 		result.replace(oldValue, newValue)
 	}
 
+fun File.getAllSpellCheckErrors() = walk().filter { file ->
+	file.name.endsWith(".txt")
+}.map { file ->
+	file.readText().simplify().applyKnownFixes().split(' ').mapNotNull{ string ->
+		val word = string.removePunctuationMarks()
+		if (word !in myDictionary && dictionary?.spell(word) == false) word else null
+	}
+}.flatten().toList()
+
 fun String.spellCheck() :String =
 	if (dictionary != null) split(" ").joinToString(" ") { string ->
 		val word = string.removePunctuationMarks()
@@ -237,22 +250,31 @@ fun String.setTextColoredByLang(str :String) = str.splitByLang().fold(String()) 
 }
 
 
-fun JEditorPane.getPlainTextOrNull() :String? = try {
-	val plainKit = getEditorKitForContentType("text/plain")
-	val writer = StringWriter()
-	plainKit.write(writer, document, 0, document.length)
-	writer.toString()
-} catch (ex :Exception) {
-	null
-}
+val JEditorPane.plainTextOrNull
+	get() = try {
+		val plainKit = getEditorKitForContentType("text/plain")
+		val writer = StringWriter()
+		plainKit.write(writer, document, 0, document.length)
+		writer.toString()
+	} catch (ex :Exception) {
+		null
+	}
 
-fun JEditorPane.getPlainText() :String = getPlainTextOrNull() ?: ""
+val JEditorPane.plainText
+	get() = plainTextOrNull ?: ""
 
 fun JEditorPane.setPlainText(str :String) {
 	setTextChecked(str)
 	document.addDocumentListener(object : DocumentListener {
-		override fun insertUpdate(event : DocumentEvent) = setTextChecked(getPlainText())
-		override fun removeUpdate(event : DocumentEvent) = setTextChecked(getPlainText())
-		override fun changedUpdate(event : DocumentEvent) = setTextChecked(getPlainText())
+		override fun insertUpdate(event : DocumentEvent) = setTextChecked(plainText)
+		override fun removeUpdate(event : DocumentEvent) = setTextChecked(plainText)
+		override fun changedUpdate(event : DocumentEvent) = setTextChecked(plainText)
 	})
 }
+
+fun <T> MutableListIterator<T>.nextOrPreviousOrNull() =
+	when {
+		this.hasNext() -> next()
+		this.hasPrevious() -> previous()
+		else -> null
+	}

@@ -11,7 +11,7 @@ plugins {
 }
 
 project.ext {
-	set("mainClassName", "io.github.kolod.GroundTruthEditor")
+	set("mainClassName", "io.github.kolod.MainWindow")
 }
 
 group = "io.github.kolod"
@@ -34,6 +34,8 @@ dependencies {
 	implementation(FlatLookAndFeel.extras)
 	implementation(OpenHFT.hashing)
 	implementation(Hunspell.core)
+	implementation(OpenCV.core)
+	implementation(Tesseract.core)
 	testImplementation(kotlin("test"))
 	testImplementation(platform(Junit.platform))
 	testImplementation(Junit.core)
